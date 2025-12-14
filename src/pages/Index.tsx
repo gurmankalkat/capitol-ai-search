@@ -146,6 +146,7 @@ const Index = () => {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadStatus, setUploadStatus] = useState<'idle' | 'processing' | 'ready'>('idle');
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   const activeDocuments = uploadedDocuments.length ? uploadedDocuments : documents;
   const activeStats = useMemo(() => {
@@ -205,6 +206,31 @@ const Index = () => {
     URL.revokeObjectURL(url);
   };
 
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    
+    const file = e.dataTransfer.files?.[0];
+    if (file && file.type === "application/json") {
+      handleCmsUpload(file);
+    } else {
+      setUploadError("Please drop a valid JSON file.");
+    }
+  };
+
   if (error && uploadedDocuments.length === 0) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -243,8 +269,18 @@ const Index = () => {
 
         {/* CMS Upload & Conversion */}
         <section className="mb-10">
-          <div className="rounded-2xl border border-border bg-card p-6 min-h-[65vh]">
-            <div className="flex flex-col gap-3">
+          <div 
+            className={`rounded-2xl border-2 border-dashed bg-card p-6 min-h-[50vh] transition-colors ${
+              isDragging 
+                ? 'border-primary bg-primary/5' 
+                : 'border-border hover:border-muted-foreground/50'
+            }`}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+          >
+            <div className="flex flex-col gap-4">
+              {/* Header with upload button */}
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-3">
                   <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
@@ -253,13 +289,13 @@ const Index = () => {
                   <div>
                     <h3 className="text-lg font-semibold text-foreground">CMS → Qdrant Converter</h3>
                     <p className="text-sm text-muted-foreground">
-                      Upload a CMS API JSON export and we will normalize it into Qdrant-ready documents.
+                      Drop a JSON file here or click to browse
                     </p>
                   </div>
                 </div>
                 <label className="cursor-pointer inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground hover:border-primary hover:text-primary transition-colors">
                   <Upload className="h-4 w-4" />
-                  <span>{uploadStatus === 'processing' ? 'Processing...' : 'Upload JSON'}</span>
+                  <span>{uploadStatus === 'processing' ? 'Processing...' : 'Browse Files'}</span>
                   <input
                     type="file"
                     accept="application/json,.json"
@@ -274,6 +310,14 @@ const Index = () => {
                   />
                 </label>
               </div>
+
+              {/* Drag indicator */}
+              {isDragging && (
+                <div className="flex items-center justify-center py-8 text-primary font-medium">
+                  <Upload className="h-6 w-6 mr-2 animate-bounce" />
+                  Drop your JSON file here
+                </div>
+              )}
 
               {uploadError && (
                 <div className="flex items-start gap-2 rounded-lg border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive">
