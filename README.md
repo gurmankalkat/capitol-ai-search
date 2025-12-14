@@ -1,6 +1,8 @@
 # Capitol AI Assessment
 
-## Project info
+## Project Info
+
+This project converts CMS JSON exports into Qdrant-ready vectors and exposes both a web UI and an API to run the Python-based embedding pipeline.
 
 **Deployed**: https://capitol-ai-assessment.onrender.com/
 
@@ -55,21 +57,21 @@ A fully deployed live web application that lets users upload CMS documents and c
 2. Drag and drop your file into the **“CMS → Qdrant Converter”** box, or click **“Browse Files”** to upload it
 3. Once processing is complete, download the converted JSON output
 
-**Infrastructure details**
+**Infrastructure Details**
 - Hosted on Render using `Dockerfile` 
 - Node/Express API listens on `PORT` (default 4000) and serves the built React app plus the `/api/pipeline` endpoint
 - Python virtualenv is created inside the container to run `server/src/pipeline.py` 
 
 ## Technologies Used
 
-Frontend is built with:
+**Frontend is built with:**
 - Vite
 - TypeScript
 - React
 - shadcn-ui
 - Tailwind CSS
 
-Backend is built with:
+**Backend is built with:**
 - Node.js + Express
 - TypeScript
 - Python 3 (for the `pipeline.py` embedding/transformation script)
@@ -96,6 +98,7 @@ Backend is built with:
 - **Environment-driven behavior:** Embedding provider, skip/limit toggles, and Qdrant upload are controlled via env vars for flexibility; trade-off: misconfigured envs can cause silent skips or failures
 
 ## API Documentation
+
 - **GET `/health`**  
   - Purpose: liveness check.  
   - Response: `200 OK` → `{ "status": "ok" }`
