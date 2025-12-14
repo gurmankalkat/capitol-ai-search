@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { QdrantDocument, PipelineStats } from '@/types/document';
+import { apiUrl } from '@/lib/api';
 
 export function useDocuments() {
   const [documents, setDocuments] = useState<QdrantDocument[]>([]);
@@ -9,12 +10,26 @@ export function useDocuments() {
   useEffect(() => {
     async function fetchDocuments() {
       try {
-        const response = await fetch('/data/qdrant_documents.json');
-        if (!response.ok) throw new Error('Failed to fetch documents');
+        // Prefer live API, fallback to bundled data for local preview
+        const response = await fetch(apiUrl('/api/documents'));
+        if (!response.ok) throw new Error('Failed to fetch documents from API');
         const data = await response.json();
         setDocuments(data);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Unknown error');
+        try {
+          const fallback = await fetch('/data/qdrant_documents.json');
+          if (!fallback.ok) throw new Error('Failed to fetch local data');
+          const data = await fallback.json();
+          setDocuments(data);
+        } catch (fallbackErr) {
+          setError(
+            err instanceof Error
+              ? err.message
+              : fallbackErr instanceof Error
+                ? fallbackErr.message
+                : 'Unknown error'
+          );
+        }
       } finally {
         setLoading(false);
       }

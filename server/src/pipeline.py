@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional
 
 from bs4 import BeautifulSoup
+from qdrant_client import QdrantClient, models
 from openai import OpenAI
 from sentence_transformers import SentenceTransformer
 
@@ -217,6 +218,38 @@ def add_embeddings_openai(docs: List[Dict[str, Any]], model_name: str, batch_siz
     return dim
 
 
+def push_to_qdrant(docs: List[Dict[str, Any]], vector_size: int) -> None:
+    """Upsert documents into a Qdrant collection using env configuration."""
+    url = os.getenv("QDRANT_URL")
+    api_key = os.getenv("QDRANT_API_KEY")
+    collection = os.getenv("QDRANT_COLLECTION", "documents")
+
+    if not url or not api_key:
+        logging.info("QDRANT_URL or QDRANT_API_KEY not set; skipping Qdrant upload.")
+        return
+
+    client = QdrantClient(url=url, api_key=api_key)
+
+    client.recreate_collection(
+        collection_name=collection,
+        vectors_config=models.VectorParams(size=vector_size, distance=models.Distance.COSINE),
+    )
+
+    points = []
+    for idx, doc in enumerate(docs):
+        # Qdrant requires point IDs to be UUIDs or unsigned ints; use index to avoid format issues.
+        points.append(
+            models.PointStruct(
+                id=idx,
+                vector=doc["embedding"],
+                payload={**doc["metadata"], "text": doc["text"]},
+            )
+        )
+
+    client.upsert(collection_name=collection, points=points)
+    logging.info("Upserted %s vectors into Qdrant collection '%s'", len(points), collection)
+
+
 def run_pipeline(
     input_path: Path,
     output_path: Path,
@@ -256,6 +289,7 @@ def run_pipeline(
     logging.info("Wrote %s documents to %s", len(transformed), output_path)
     if embedding_dim:
         logging.info("Embedding provider=%s model=%s dim=%s", provider, embedding_model_used, embedding_dim)
+        push_to_qdrant(transformed, embedding_dim)
 
 
 def parse_args() -> argparse.Namespace:
@@ -272,7 +306,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--provider",
         choices=["sentence-transformers", "openai"],
-        default="sentence-transformers",
+        default="openai",
         help="Embedding provider to use.",
     )
     parser.add_argument(

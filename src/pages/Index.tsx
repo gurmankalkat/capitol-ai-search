@@ -4,6 +4,7 @@ import { StatsCard } from "@/components/dashboard/StatsCard";
 import { DocumentCard } from "@/components/dashboard/DocumentCard";
 import { EmbeddingVisualizer } from "@/components/dashboard/EmbeddingVisualizer";
 import { useDocuments } from "@/hooks/useDocuments";
+import { apiUrl } from "@/lib/api";
 import { QdrantDocument, PipelineStats } from "@/types/document";
 import { 
   FileText, 
@@ -172,6 +173,8 @@ const Index = () => {
       setUploadError(null);
       setUploadStatus('processing');
       setUploadedFileName(file.name);
+      setConvertedJson(null);
+      setUploadedDocuments([]);
 
       const raw = await file.text();
       const parsed = JSON.parse(raw);
@@ -183,9 +186,28 @@ const Index = () => {
         throw new Error('Expected an array of CMS records or a top-level "items"/"data" array.');
       }
 
-      const converted = items.map((item, index) => cmsRecordToQdrant(item as Record<string, unknown>, index));
-      setUploadedDocuments(converted);
-      setConvertedJson(JSON.stringify(converted, null, 2));
+      const response = await fetch(apiUrl('/api/pipeline'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(items),
+      });
+
+      if (!response.ok) {
+        const errorBody = await response.text();
+        throw new Error(`Pipeline error: ${response.status} ${errorBody}`);
+      }
+
+      const payload = await response.json();
+      const transformed = (payload as any)?.documents as QdrantDocument[] | undefined;
+
+      if (!transformed || !Array.isArray(transformed) || !transformed.length) {
+        throw new Error('Pipeline did not return transformed documents.');
+      }
+
+      setUploadedDocuments(transformed);
+      setConvertedJson(JSON.stringify(transformed, null, 2));
       setSelectedSection(null);
       setSearchQuery("");
       setUploadStatus('ready');

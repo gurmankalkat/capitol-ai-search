@@ -76,6 +76,14 @@ async function runPythonPipeline(payload: unknown[]) {
   const pipelinePath =
     process.env.PIPELINE_PATH ||
     path.resolve(process.cwd(), 'src', 'pipeline.py');
+  const venvPython = path.resolve(process.cwd(), '.venv', 'bin', 'python3');
+  const pythonExecutable =
+    process.env.PYTHON_BIN ||
+    (await fs
+      .access(venvPython)
+      .then(() => venvPython)
+      .catch(() => 'python3'));
+  const provider = process.env.PIPELINE_PROVIDER || 'openai';
 
   await fs.writeFile(inputPath, JSON.stringify(payload, null, 2), 'utf8');
 
@@ -86,10 +94,12 @@ async function runPythonPipeline(payload: unknown[]) {
     '--output',
     outputPath,
     process.env.PIPELINE_SKIP_EMBEDDINGS === 'false' ? '' : '--skip-embeddings',
+    '--provider',
+    provider,
   ].filter(Boolean);
 
   await new Promise<void>((resolve, reject) => {
-    const child = spawn('python3', args, { stdio: 'inherit' });
+    const child = spawn(pythonExecutable, args, { stdio: 'inherit' });
     child.on('error', reject);
     child.on('close', (code) => {
       if (code === 0) resolve();
@@ -113,6 +123,7 @@ app.post('/api/pipeline', async (req, res) => {
       stored: documents.length,
       outputPath,
       message: 'Pipeline completed',
+      documents: transformedDocs,
     });
   } catch (error: any) {
     console.error('Pipeline error', error);
