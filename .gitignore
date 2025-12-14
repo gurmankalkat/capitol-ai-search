@@ -27,3 +27,6 @@ dist-ssr
 .env
 *.env
 /server/.env
+
+# Pipeline outputs
+/server/src/output

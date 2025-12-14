@@ -100,6 +100,10 @@ A fully deployed live web application that lets users upload CMS documents and c
   - Trade-off: formatting/structure is lost for nested or rich markup
 - **In-memory cache on API:** API retains the last transformed docs for quick fetch
   - Trade-off: state resets on restart and does not auto-sync with Qdrant
+- **Embedding provider:** Default to OpenAI embeddings (`text-embedding-3-small`) for quality and hosted scalability
+  - Trade-off: requires paid API key and incurs external latency; SentenceTransformers remains available for offline use
+- **Vector store:** Qdrant chosen for similarity search and simple cloud/SaaS hosting with cosine distance
+  - Trade-off: adds an external dependency; upload is skipped when `QDRANT_URL`/`QDRANT_API_KEY` are unset
 - **Single container deploy:** Dockerfile builds the Vite frontend and serves it from Express for a single Render service
   - Trade-off: frontend and API share a release cycle and image size increases
 - **Environment-driven behavior:** Embedding provider, skip/limit toggles, and Qdrant upload are controlled via env vars for flexibility
