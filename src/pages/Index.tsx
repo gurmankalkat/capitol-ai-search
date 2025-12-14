@@ -3,18 +3,13 @@ import { Header } from "@/components/dashboard/Header";
 import { StatsCard } from "@/components/dashboard/StatsCard";
 import { DocumentCard } from "@/components/dashboard/DocumentCard";
 import { EmbeddingVisualizer } from "@/components/dashboard/EmbeddingVisualizer";
-import { ApiDocumentation } from "@/components/dashboard/ApiDocumentation";
-import { PipelineStatus } from "@/components/dashboard/PipelineStatus";
 import { useDocuments } from "@/hooks/useDocuments";
 import { QdrantDocument, PipelineStats } from "@/types/document";
 import { 
   FileText, 
   Cpu, 
-  Layers, 
   Globe, 
-  Calendar, 
   Search,
-  Filter,
   Grid3X3,
   List,
   Upload,
@@ -72,8 +67,15 @@ const computeStats = (docs: QdrantDocument[]): PipelineStats | null => {
 };
 
 const cmsRecordToQdrant = (item: Record<string, unknown>, index: number): QdrantDocument => {
-  if (item && typeof item === 'object' && 'metadata' in item && 'embedding' in item) {
-    return item as QdrantDocument;
+  // Check if already in Qdrant format
+  if (
+    item && 
+    typeof item === 'object' && 
+    'text' in item && 
+    'metadata' in item && 
+    'embedding' in item
+  ) {
+    return item as unknown as QdrantDocument;
   }
 
   const text = String(
@@ -347,7 +349,7 @@ const Index = () => {
 
         {/* Stats Grid */}
         {activeStats && (
-          <section className="mb-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <section className="mb-10 grid grid-cols-1 sm:grid-cols-3 gap-4">
             <StatsCard
               title="Total Documents"
               value={activeStats.totalDocuments}
@@ -367,7 +369,7 @@ const Index = () => {
               value={activeStats.uniqueWebsites}
               icon={Globe}
               description={`${activeStats.dateRange.earliest} → ${activeStats.dateRange.latest}`}
-              delay={300}
+              delay={200}
             />
           </section>
         )}
@@ -459,17 +461,10 @@ const Index = () => {
 
       {/* Footer */}
       <footer className="border-t border-border bg-card mt-12">
-        <div className="container mx-auto px-6 py-6">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <p className="text-sm text-muted-foreground">
-              Capitol AI Data Pipeline • Built with Qdrant Vector Database
-            </p>
-            <div className="flex items-center gap-4 text-sm text-muted-foreground">
-              <span className="font-mono">v1.0.0</span>
-              <span>•</span>
-              <a href="#" className="hover:text-foreground transition-colors">Documentation</a>
-            </div>
-          </div>
+        <div className="container mx-auto px-6 py-4">
+          <p className="text-sm text-muted-foreground text-center">
+            Capitol AI Data Pipeline • Built with Qdrant Vector Database
+          </p>
         </div>
       </footer>
     </div>
