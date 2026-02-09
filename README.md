@@ -1,5 +1,3 @@
-# Capitol AI Assessment
-
 ## Project Info
 
 This project converts CMS JSON exports into Qdrant-ready vectors and exposes both a web UI and an API to run the Python-based embedding pipeline.
